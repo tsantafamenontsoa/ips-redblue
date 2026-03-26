@@ -1,0 +1,12 @@
+# =============================================================================
+#  local.rules — Equipe 3
+#  Round : Injection SQL
+#  IMPORTANT : chaque regle sur UNE SEULE LIGNE
+#  Recharger : docker exec suricata suricatasc -c reload-rules
+#  Alertes   : docker exec suricata tail -f /var/log/suricata/fast.log
+# =============================================================================
+
+# Ajoutez vos regles ci-dessous (sid : 30XX)
+# Exemple :
+# alert http any any -> $HTTP_SERVERS any (msg:"Exemple"; flow:established,to_server; http.uri; content:"test"; nocase; sid:3001; rev:1;)
+
