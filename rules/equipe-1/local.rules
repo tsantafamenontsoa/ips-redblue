@@ -10,3 +10,7 @@
 # Exemple :
 # alert http any any -> $HTTP_SERVERS any (msg:"Exemple"; flow:established,to_server; http.uri; content:"test"; nocase; sid:1001; rev:1;)
 
+
+regle  :Test SQL Injection (SID 1000002)
+curl -v "http://172.20.0.10:80/index.php?id=1+UNION+SELECT+1
+,2,3--"
